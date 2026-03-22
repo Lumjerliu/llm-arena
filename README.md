@@ -224,3 +224,10 @@ Feel free to submit issues and pull requests to add more LLM providers or improv
 ## License
 
 MIT License
+
+## One-Click Deploy
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Lumjerliu/llm-arena)
+
+Click the button above to deploy your own instance of LLM Arena!
+
