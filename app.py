@@ -235,36 +235,36 @@ def seed_default_data():
 
 seed_default_data()
 
-# Available LLM providers (updated with more models)
+# Available LLM providers - matched to current official models from company websites/docs (2026)
 LLM_PROVIDERS = {
     'openai': {
         'name': 'OpenAI',
-        'models': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'o1-preview', 'o1-mini'],
-        'default_model': 'gpt-4o'
+        'models': ['gpt-5.4', 'gpt-5.4-mini', 'gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+        'default_model': 'gpt-5.4'
     },
     'anthropic': {
         'name': 'Anthropic',
-        'models': ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
-        'default_model': 'claude-3-5-sonnet-20241022'
+        'models': ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
+        'default_model': 'claude-sonnet-4-6'
     },
     'google': {
         'name': 'Google',
-        'models': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
-        'default_model': 'gemini-1.5-pro'
+        'models': ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
+        'default_model': 'gemini-2.0-flash'
     },
     'mistral': {
         'name': 'Mistral AI',
-        'models': ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x22b', 'open-mistral-nemo'],
+        'models': ['mistral-large-latest', 'mistral-small-latest', 'pixtral-large-latest', 'open-mixtral-8x22b', 'open-mistral-nemo'],
         'default_model': 'mistral-large-latest'
     },
     'cohere': {
         'name': 'Cohere',
-        'models': ['command-r-plus-08-2024', 'command-r-08-2024', 'command'],
+        'models': ['command-r-plus-08-2024', 'command-r-08-2024', 'command-r7b-12-2024', 'command'],
         'default_model': 'command-r-plus-08-2024'
     },
     'groq': {
         'name': 'Groq',
-        'models': ['llama-3.3-70b-versatile', 'llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+        'models': ['llama-3.3-70b-versatile', 'llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'llama-4-scout-17b-16e-instruct', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
         'default_model': 'llama-3.3-70b-versatile'
     },
     'deepseek': {
@@ -274,18 +274,23 @@ LLM_PROVIDERS = {
     },
     'xai': {
         'name': 'xAI',
-        'models': ['grok-2-1212', 'grok-2-vision-1212', 'grok-beta'],
-        'default_model': 'grok-2-1212'
+        'models': ['grok-4.20-0309-reasoning', 'grok-4.20-0309-non-reasoning', 'grok-4-1-fast-reasoning', 'grok-beta', 'grok-2-1212'],
+        'default_model': 'grok-4.20-0309-reasoning'
     },
     'perplexity': {
         'name': 'Perplexity',
-        'models': ['llama-3.1-sonar-large-128k-online', 'llama-3.1-sonar-small-128k-online'],
+        'models': ['llama-3.1-sonar-large-128k-online', 'llama-3.1-sonar-small-128k-online', 'sonar-reasoning'],
         'default_model': 'llama-3.1-sonar-large-128k-online'
     },
     'together': {
         'name': 'Together AI',
-        'models': ['meta-llama/Llama-3.3-70B-Instruct-Turbo', 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'Qwen/Qwen2.5-72B-Instruct-Turbo'],
+        'models': ['meta-llama/Llama-3.3-70B-Instruct-Turbo', 'meta-llama/Llama-4-Scout-17B-16E-Instruct', 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'Qwen/Qwen2.5-72B-Instruct-Turbo'],
         'default_model': 'meta-llama/Llama-3.3-70B-Instruct-Turbo'
+    },
+    'ollama': {
+        'name': 'Ollama (Local Free)',
+        'models': ['llama3.2', 'llama3.2:1b', 'llama3.1', 'phi3', 'mistral', 'gemma2:2b', 'gemma2:9b', 'qwen2.5:7b'],
+        'default_model': 'llama3.2'
     }
 }
 
@@ -344,9 +349,14 @@ async def call_openai(session, api_key: str, prompt: str, model: str) -> Dict[st
                     'tokens': result.get('usage', {})
                 }
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
@@ -384,9 +394,14 @@ async def call_anthropic(session, api_key: str, prompt: str, model: str) -> Dict
                               'output': result.get('usage', {}).get('output_tokens', 0)}
                 }
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
@@ -412,9 +427,14 @@ async def call_google(session, api_key: str, prompt: str, model: str) -> Dict[st
                 text = result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
                 return {'success': True, 'response': text, 'elapsed': elapsed}
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
@@ -526,9 +546,14 @@ async def call_groq(session, api_key: str, prompt: str, model: str) -> Dict[str,
                     'tokens': result.get('usage', {})
                 }
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
@@ -564,9 +589,14 @@ async def call_deepseek(session, api_key: str, prompt: str, model: str) -> Dict[
                     'tokens': result.get('usage', {})
                 }
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
@@ -602,9 +632,14 @@ async def call_xai(session, api_key: str, prompt: str, model: str) -> Dict[str, 
                     'tokens': result.get('usage', {})
                 }
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
@@ -640,9 +675,14 @@ async def call_perplexity(session, api_key: str, prompt: str, model: str) -> Dic
                     'tokens': result.get('usage', {})
                 }
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
@@ -678,15 +718,63 @@ async def call_together(session, api_key: str, prompt: str, model: str) -> Dict[
                     'tokens': result.get('usage', {})
                 }
             else:
+                error_obj = result.get('error') or result.get('message', {})
+                if isinstance(error_obj, dict):
+                    error_msg = error_obj.get('message', str(error_obj))
+                else:
+                    error_msg = str(error_obj)
                 return {
                     'success': False,
-                    'error': result.get('error', {}).get('message', 'Unknown error'),
+                    'error': error_msg,
                     'elapsed': elapsed
                 }
     except asyncio.TimeoutError:
         return {'success': False, 'error': 'Request timeout', 'elapsed': time.time() - start_time}
     except Exception as e:
         return {'success': False, 'error': str(e), 'elapsed': time.time() - start_time}
+
+
+async def call_ollama(session, api_key: str, prompt: str, model: str) -> Dict[str, Any]:
+    """Call Ollama local API (free, no key required)"""
+    url = "http://localhost:11434/api/chat"
+    data = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "options": {
+            "temperature": 0.7,
+            "num_predict": 2048
+        }
+    }
+    
+    start_time = time.time()
+    try:
+        async with session.post(url, json=data, timeout=180) as response:
+            result = await response.json()
+            elapsed = time.time() - start_time
+            
+            if response.status == 200:
+                content = result.get('message', {}).get('content', '')
+                return {
+                    'success': True,
+                    'response': content,
+                    'elapsed': elapsed,
+                    'tokens': {
+                        'input': result.get('prompt_eval_count', 0),
+                        'output': result.get('eval_count', 0)
+                    }
+                }
+            else:
+                error_msg = result.get('error', 'Unknown error')
+                return {
+                    'success': False,
+                    'error': f'Ollama error: {error_msg}. Make sure Ollama is running (ollama serve) and model is pulled.',
+                    'elapsed': elapsed
+                }
+    except asyncio.TimeoutError:
+        return {'success': False, 'error': 'Ollama request timeout (is Ollama running?)', 'elapsed': time.time() - start_time}
+    except Exception as e:
+        return {'success': False, 'error': f'Cannot connect to Ollama: {str(e)}. Run `ollama serve` and pull a model like `ollama pull llama3.2`', 'elapsed': time.time() - start_time}
 
 # Provider call mapping
 PROVIDER_CALLS = {
@@ -699,7 +787,8 @@ PROVIDER_CALLS = {
     'deepseek': call_deepseek,
     'xai': call_xai,
     'perplexity': call_perplexity,
-    'together': call_together
+    'together': call_together,
+    'ollama': call_ollama
 }
 
 async def run_competition(prompt: str, selected_providers: List[Dict], competition_id: str) -> List[Dict]:
@@ -714,8 +803,10 @@ async def run_competition(prompt: str, selected_providers: List[Dict], competiti
             model = provider_config.get('model', LLM_PROVIDERS[provider]['default_model'])
             api_key = api_keys.get(provider, '')
             
-            if api_key and provider in PROVIDER_CALLS:
+            # Allow Ollama (free/local) even without API key
+            if (provider == 'ollama' or (api_key and api_key.strip())) and provider in PROVIDER_CALLS:
                 call_func = PROVIDER_CALLS[provider]
+                # For ollama, api_key is ignored
                 tasks.append({
                     'provider': provider,
                     'model': model,

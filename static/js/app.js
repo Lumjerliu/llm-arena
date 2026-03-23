@@ -21,14 +21,15 @@ const providerIcons = {
     deepseek: 'D',
     xai: 'X',
     perplexity: 'P',
-    together: 'T'
+    together: 'T',
+    ollama: '🦙'
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    await loadProviders();  // Must come before loadKeys (form rendering depends on providers)
+    await loadKeys();
     await Promise.all([
-        loadProviders(),
-        loadKeys(),
         loadHistory(),
         loadTemplates(),
         loadCriteria()
@@ -144,7 +145,10 @@ function updateProviderStatus() {
     for (const [key, provider] of Object.entries(providers)) {
         const status = document.querySelector(`.api-status[data-provider="${key}"]`);
         if (status) {
-            if (configuredKeys[key]) {
+            if (key === 'ollama') {
+                status.className = 'api-status configured free';
+                status.innerHTML = `<i class="fas fa-leaf"></i><span>Free - Local (no API key)</span>`;
+            } else if (configuredKeys[key]) {
                 status.className = 'api-status configured';
                 status.innerHTML = `<i class="fas fa-check-circle"></i><span>API key configured</span>`;
             } else {
@@ -159,24 +163,47 @@ function renderApiKeyForm() {
     const form = document.getElementById('api-keys-form');
     form.innerHTML = '';
     
+    if (!providers || Object.keys(providers).length === 0) {
+        console.warn('Providers not loaded yet - skipping API key form render');
+        return;
+    }
+    
     for (const [key, provider] of Object.entries(providers)) {
+        if (key === 'ollama') {
+            // Skip API key input for free local Ollama
+            continue;
+        }
+        
         const group = document.createElement('div');
         group.className = 'api-key-group';
         
         const hasKey = configuredKeys[key];
+        const currentDisplay = hasKey ? `Current: ${hasKey}` : 'No key saved';
         
         group.innerHTML = `
             <div class="api-key-header">
                 <div class="provider-icon" style="width: 30px; height: 30px; font-size: 0.9rem;">${providerIcons[key] || key[0].toUpperCase()}</div>
                 <label for="key-${key}">${provider.name}</label>
+                <span style="margin-left: auto; font-size: 0.75rem; color: var(--text-muted);">${currentDisplay}</span>
             </div>
             <input type="password" id="key-${key}" class="api-key-input" 
-                   placeholder="${hasKey ? 'Key configured (enter new to update)' : 'Enter your API key'}"
+                   placeholder="${hasKey ? 'Enter new key to update (leave blank to keep current)' : 'Enter your API key'}"
                    data-provider="${key}">
         `;
         
         form.appendChild(group);
     }
+    
+    // Add note about free provider
+    const note = document.createElement('div');
+    note.className = 'free-provider-note';
+    note.innerHTML = `
+        <div style="background: var(--darker); padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid var(--secondary);">
+            <strong>🦙 Ollama (Free Local LLM)</strong><br>
+            No API key required. Install Ollama from <a href="https://ollama.com" target="_blank">ollama.com</a>, run <code>ollama serve</code> and <code>ollama pull llama3.2</code>.
+        </div>
+    `;
+    form.appendChild(note);
 }
 
 function renderTemplates() {
@@ -529,8 +556,8 @@ async function runCompetition() {
         return { provider, model };
     });
     
-    // Check for API keys
-    const missingKeys = selectedProviders.filter(p => !configuredKeys[p.provider]);
+    // Check for API keys (skip for free providers like Ollama)
+    const missingKeys = selectedProviders.filter(p => !configuredKeys[p.provider] && p.provider !== 'ollama');
     if (missingKeys.length > 0) {
         const names = missingKeys.map(p => providers[p.provider]?.name || p.provider).join(', ');
         showToast(`Please configure API keys for: ${names}`, 'warning');

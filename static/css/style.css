@@ -313,6 +313,26 @@ header h1 i {
     color: var(--accent);
 }
 
+.api-status.free {
+    color: var(--secondary);
+}
+
+.free-provider-note a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.free-provider-note a:hover {
+    text-decoration: underline;
+}
+
+.free-provider-note code {
+    background: var(--darker);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
 /* Compete Button */
 .compete-section {
     text-align: center;
@@ -761,6 +781,7 @@ header h1 i {
 .groq .provider-icon { background: #f55036; }
 .deepseek .provider-icon { background: #0066ff; }
 .xai .provider-icon { background: #1a1a2e; }
+.ollama .provider-icon { background: #22c55e; }
 
 /* Responsive */
 @media (max-width: 768px) {

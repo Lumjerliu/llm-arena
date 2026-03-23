@@ -32,6 +32,7 @@ A web application to compare and compete different Large Language Models (LLMs) 
 | **xAI** | Grok 2, Grok 2 Vision |
 | **Perplexity** | Sonar Large, Sonar Small |
 | **Together AI** | Llama 3.3 70B, Mixtral, Qwen 2.5 72B |
+| **Ollama (Free/Local)** | Llama 3.2, Phi-3, Mistral, Gemma2 (run locally, no API key) |
 
 ## Use Cases
 
@@ -79,11 +80,13 @@ python app.py
 
 ### API Keys
 
-1. Go to the **API Keys** tab in the application
-2. Enter your API keys for the providers you want to use
+1. Go to the **API Keys** tab (or Settings tab) in the application
+2. Enter your API keys for the providers you want to use (Ollama does not require one)
 3. Click **Save API Keys**
 
 API keys are stored locally in SQLite database. For production, use environment variables.
+
+**Free LLMs**: Ollama runs locally on your machine - no API key or payment required. See installation instructions below.
 
 ### Getting API Keys
 
@@ -97,6 +100,13 @@ API keys are stored locally in SQLite database. For production, use environment 
 - **xAI**: https://console.x.ai/
 - **Perplexity**: https://www.perplexity.ai/settings/api
 - **Together AI**: https://api.together.xyz/
+
+### Ollama (Free Local)
+
+1. Download from https://ollama.com
+2. Run `ollama serve` in terminal
+3. Pull a model: `ollama pull llama3.2`
+4. Select Ollama in the Arena tab - no key needed!
 
 ## Usage
 
