@@ -22,8 +22,8 @@ import secrets
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
 
-# Database setup
-DATABASE = 'llm_arena.db'
+# Database setup - use /tmp on Render (ephemeral filesystem)
+DATABASE = os.path.join('/tmp' if os.environ.get('RENDER') else '.', 'llm_arena.db')
 
 @contextmanager
 def get_db():
@@ -299,10 +299,18 @@ competition_history = []
 
 # API Key management
 def load_api_keys():
-    """Load API keys from database"""
+    """Load API keys from database, overridden by environment variables (for Render/production)"""
     with get_db() as conn:
         rows = conn.execute('SELECT provider, api_key FROM api_keys').fetchall()
-        return {row['provider']: row['api_key'] for row in rows}
+        keys = {row['provider']: row['api_key'] for row in rows}
+    
+    # Environment variables take precedence (recommended for production/Render)
+    for provider in LLM_PROVIDERS.keys():
+        env_key = f"{provider.upper()}_API_KEY"
+        if os.environ.get(env_key):
+            keys[provider] = os.environ.get(env_key)
+    
+    return keys
 
 def save_api_key(provider, api_key):
     """Save or update an API key"""
