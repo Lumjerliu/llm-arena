@@ -866,6 +866,49 @@ async def run_competition(prompt: str, selected_providers: List[Dict], competiti
     
     return results
 
+
+async def synthesize_consensus(prompt: str, results: List[Dict]) -> Dict:
+    """Democratic synthesis: Create the best response by combining all models' outputs"""
+    if not results:
+        return {'response': 'No responses to synthesize', 'success': False}
+    
+    consensus_prompt = f"""You are an impartial democratic judge. The original prompt was:
+
+{prompt}
+
+Here are the responses from multiple LLMs:
+
+"""
+    for i, r in enumerate(results):
+        if r.get('success'):
+            label = chr(65 + i)
+            consensus_prompt += f"\n{label}. {r.get('provider_name', 'Unknown')} ({r.get('model', '')}):\n{r.get('response', 'No response')}\n---\n"
+    
+    consensus_prompt += """\nSynthesize the single best final response by taking the strongest parts from all the above responses, correcting any errors, and providing the most accurate, complete, and useful answer. Do not mention the individual models in the final response."""
+
+    # Use the top-ranked model's API to synthesize (democratic judge)
+    top_result = next((r for r in results if r.get('success')), results[0] if results else None)
+    if top_result:
+        provider = top_result['provider']
+        model = top_result['model']
+        api_key = load_api_keys().get(provider, '')
+        if provider in PROVIDER_CALLS and api_key:
+            async with aiohttp.ClientSession() as session:
+                try:
+                    judge_result = await PROVIDER_CALLS[provider](session, api_key, consensus_prompt, model)
+                    if judge_result.get('success'):
+                        return {
+                            'response': judge_result['response'],
+                            'success': True,
+                            'judge_model': top_result['provider_name'],
+                            'elapsed': judge_result.get('elapsed', 0)
+                        }
+                except:
+                    pass
+    
+    return {'response': 'Could not synthesize democratic consensus', 'success': False}
+
+
 # ==================== ROUTES ====================
 
 @app.route('/')
@@ -911,6 +954,7 @@ def compete():
     selected_providers = data.get('providers', [])
     template_id = data.get('template_id')
     blind_mode = data.get('blind_mode', False)
+    democratic = data.get('democratic', False)
     
     if not prompt:
         return jsonify({'error': 'Prompt is required'}), 400
@@ -931,23 +975,42 @@ def compete():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     results = loop.run_until_complete(run_competition(prompt, selected_providers, competition_id))
+    
+    # Democratic voting/synthesis phase
+    if democratic:
+        synthesis = loop.run_until_complete(synthesize_consensus(prompt, results))
+        results.append({
+            'id': str(uuid.uuid4()),
+            'competition_id': competition_id,
+            'provider': 'consensus',
+            'provider_name': 'Democratic Consensus',
+            'model': 'Synthesis',
+            'response': synthesis.get('response', ''),
+            'elapsed': synthesis.get('elapsed', 0),
+            'success': synthesis.get('success', False),
+            'rank': 0,
+            'is_consensus': True
+        })
+    
     loop.close()
     
     # For blind mode, hide provider names
     if blind_mode:
         for result in results:
-            result['provider_name_hidden'] = f'Model {chr(65 + results.index(result))}'
-            result['provider_hidden'] = result['provider']
-            result['model_hidden'] = result['model']
-            del result['provider']
-            del result['model']
-            del result['provider_name']
+            if not result.get('is_consensus'):
+                result['provider_name_hidden'] = f'Model {chr(65 + results.index(result))}'
+                result['provider_hidden'] = result['provider']
+                result['model_hidden'] = result['model']
+                del result['provider']
+                del result['model']
+                del result['provider_name']
     
     return jsonify({
         'competition_id': competition_id,
         'prompt': prompt,
         'results': results,
         'blind_mode': blind_mode,
+        'democratic': democratic,
         'timestamp': datetime.now().isoformat()
     })
 

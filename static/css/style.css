@@ -397,6 +397,22 @@ header h1 i {
     border-color: var(--danger);
 }
 
+.result-card.consensus-card {
+    border-color: var(--gold);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
+    background: linear-gradient(135deg, var(--darker) 0%, rgba(255, 215, 0, 0.05) 100%);
+}
+
+.consensus-badge {
+    background: var(--gold);
+    color: var(--dark);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
 .result-header {
     display: flex;
     align-items: center;

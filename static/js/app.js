@@ -565,6 +565,7 @@ async function runCompetition() {
     }
     
     const blindMode = document.getElementById('blind-mode-toggle').checked;
+    const democratic = document.getElementById('democratic-toggle').checked;
     
     // Show loading
     document.getElementById('loading-overlay').style.display = 'flex';
@@ -577,7 +578,8 @@ async function runCompetition() {
             body: JSON.stringify({ 
                 prompt, 
                 providers: selectedProviders,
-                blind_mode: blindMode
+                blind_mode: blindMode,
+                democratic: democratic
             })
         });
         
@@ -636,14 +638,18 @@ function displayResults(data) {
         const displayName = isBlind ? result.provider_name_hidden : result.provider_name;
         const displayModel = isBlind ? '' : result.model;
         
+        const isConsensus = result.is_consensus;
+        const cardClass = isConsensus ? 'consensus-card' : (isWinner ? 'winner' : (isError ? 'error' : ''));
+        
         return `
-            <div class="result-card ${isWinner ? 'winner' : ''} ${isError ? 'error' : ''}" data-result-id="${result.id}">
+            <div class="result-card ${cardClass}" data-result-id="${result.id}">
                 <div class="result-header">
                     <div class="result-info">
-                        <div class="result-rank ${rankClass}">${result.rank || '-'}</div>
+                        <div class="result-rank ${rankClass}">${isConsensus ? '👑' : (result.rank || '-')}</div>
                         <div>
                             <div class="result-provider">${displayName || 'Unknown'} ${headerExtra}</div>
                             ${displayModel ? `<div class="result-model">${displayModel}</div>` : ''}
+                            ${isConsensus ? '<span class="consensus-badge">Democratic Consensus</span>' : ''}
                         </div>
                     </div>
                     <div class="result-stats">
@@ -662,7 +668,7 @@ function displayResults(data) {
                 <div class="result-response">
                     ${result.success ? renderMarkdown(result.response) : `<div class="result-error"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(result.error || 'Unknown error')}</div>`}
                 </div>
-                ${result.success ? renderRatingSection(result, data.competition_id) : ''}
+                ${result.success && !isConsensus ? renderRatingSection(result, data.competition_id) : ''}
             </div>
         `;
     }).join('');
