@@ -29,7 +29,7 @@ A web application to compare and compete different Large Language Models (LLMs) 
 | **Cohere** | Command R+, Command R |
 | **Groq** | Llama 3.3 70B, Llama 3.1 70B/8B, Mixtral |
 | **DeepSeek** | DeepSeek Chat, DeepSeek Coder, DeepSeek Reasoner |
-| **xAI** | Grok 2, Grok 2 Vision |
+| **xAI** | Grok-4.20 Reasoning, Grok-4.1 Fast, Grok-4.20 Non-Reasoning, Grok-beta, Grok-2 |
 | **Perplexity** | Sonar Large, Sonar Small |
 | **Together AI** | Llama 3.3 70B, Mixtral, Qwen 2.5 72B |
 | **Ollama (Free/Local)** | Llama 3.2, Phi-3, Mistral, Gemma2 (run locally, no API key) |
