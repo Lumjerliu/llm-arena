@@ -22,8 +22,8 @@ import secrets
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
 
-# Database setup - use /tmp on Render (ephemeral filesystem)
-DATABASE = os.path.join('/tmp' if os.environ.get('RENDER') else '.', 'llm_arena.db')
+# Database setup - use persistent disk on Render
+DATABASE = os.environ.get('DATABASE_PATH', 'llm_arena.db')
 
 @contextmanager
 def get_db():
